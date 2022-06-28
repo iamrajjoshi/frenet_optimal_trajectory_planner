@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patch
 import argparse
 from pathlib import Path
+from obstacle_handler import Obstacle_Handler
+from obstacle_handler import Obstacle
 
 
 # Run fot planner
@@ -62,6 +64,21 @@ def fot(show_animation=False,
     wy = initial_conditions['wp'][:, 1]
     obs = np.array(conds['obs'])
 
+    obs_handler = Obstacle_Handler(step_size=1.0)
+    obs1 = conds['obs'][0]
+    obs2 = conds['obs'][1]
+    
+    # Moves obstacle 2 units to the left every timestep for 10 timesteps, then moved 1 unit down for 10 timesteps
+    obs = Obstacle(obs1, is_dynamic=True, movement_list=[[-1.5,0], [1,0], [0,-0.1]], step_list=[20, 10, 7])  
+    obs_handler.add_obstacle(obs)
+    
+    # Moves obstacle 1 units to the up every timestep for 10 timesteps, then moved 1 unit down for 10 timesteps
+    obs = Obstacle(obs2, is_dynamic=True, movement_list=[[0,1], [0,-.1]], step_list=[10, 10])
+    obs_handler.add_obstacle(obs)
+
+    obs = Obstacle([38, 4, 50, 8], is_dynamic=True, movement_list=[[0,0], [-0.5, 0]], step_list=[20, 20])
+    obs_handler.add_obstacle(obs)
+
     # simulation config
     sim_loop = 200
     area = 40
@@ -71,6 +88,11 @@ def fot(show_animation=False,
         # run FOT and keep time
         print("Iteration: {}".format(i))
         start_time = time.time()
+        
+        # update obstacles
+        obs_handler.transform()
+        initial_conditions['obs'] = obs_handler.get_obstacles()
+        obs = initial_conditions['obs']
         result_x, result_y, speeds, ix, iy, iyaw, d, s, speeds_x, \
             speeds_y, misc, costs, success = \
             fot_wrapper.run_fot(initial_conditions, hyperparameters)
